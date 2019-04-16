@@ -1,0 +1,487 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Untitled Document</title>
+<script src="jquery.js"></script>
+<script src="freecrm.js"></script>
+<script src="freecrm.ajax.js"></script>
+<script>
+var descriptionFormCustomer;
+var descriptionFormContact
+
+//constants for auto creating tables - these constants define first part of the ID of controles 
+var spanPrefix="detail";
+var inputTextPrefix="text";
+var selectPrefix="selectControl";
+
+
+
+function StartCustomerEditInsertMode(){
+	$("#statusDIV").html("&nbsp;");
+	$("#divCustomer span.changeable").hide();
+	$("#divCustomer input:text").show();
+	$("#divCustomer #"+inputTextPrefix+"entity_person").removeAttr('disabled');
+	$("#selectControlorganization").show().val($("#detailorganizationID").val());
+	$("#selectControlparentName").show().val($("#detailparent").val());
+};
+
+function FillTableCustomer(z){
+	$.when(GetCustomer(z),GetContactByCustomer(z), GetChildCustomers(z)).done(function(msg1,msg2,msg3){;
+		var customer=JSON.parse(msg1[0]);
+		var contacts=JSON.parse(msg2[0]);
+		var children=JSON.parse(msg3[0]);
+		var htmlValue="<div class='actions' id='actionsDIV'></div>"+CreateVerticalTable(customer, descriptionFormCustomer,"customerTable");
+		htmlValue=htmlValue+"<br />"+ CreateViewDIV(contacts, "Contact", "This customer's contacts","id")+"<br />"+ CreateViewDIV(children, "Children", "This customer's children","id");
+		$("#divCustomer").html(htmlValue).show(200);
+		$("#presentationDIV").height(0);
+		$("#actionsMinimizePresentation").html("Maximize");
+		var actionsHTML="<div id='actionsEdit' class='actionItem'>Edit</div>";
+		actionsHTML=actionsHTML+"<div id='actionsClose' class='actionItem'>Close</div>";
+		actionsHTML=actionsHTML+"<div id='actionsAddContact' class='actionItem'>Add contact</div>"
+		$("#actionsDIV").html(actionsHTML);
+		$("#selectControlparentName option[value="+z+"]").remove();
+		if(children.length>0){
+			$.each(children,function(id,text){
+				$("#selectControlparentName option[value="+text.id+"]").remove();
+			});
+		}
+		
+	});	
+}
+
+function CreateEmptyTableCustomer(){
+	var htmlValue="<div class='actions' id='actionsDIV'></div>"+CreateVerticalTable("", descriptionFormCustomer,"customerTable");
+	$("#divCustomer").html(htmlValue).show(200);
+	$("#presentationDIV").height(0);
+	StartCustomerEditInsertMode()
+	var actionsHTML="<div id='actionsInsertSave' class='actionItem'>Save</div>";
+	actionsHTML=actionsHTML+"<div id='actionsClose' class='actionItem'>Close</div>";
+	$("#actionsDIV").html(actionsHTML);	
+};
+
+function AddContactToCustomer(){
+	var htmlValue="<div class='actions' id='actionsWorkAreaDIV'></div>"+CreateVerticalTable("", descriptionFormContact,"contactTable");
+	$("#divWorkArea").html(htmlValue).show(200);
+	$("#presentationDIV").height(0);
+	$("#statusDIV").html("&nbsp;");
+	$("#divWorkArea span.changeable").hide();
+	$("#divWorkArea input:text").show();
+	$("#divWorkArea #"+spanPrefix+"customerName").val($("#divCustomer #"+spanPrefix+"customer").val());
+	$("#divWorkArea #"+spanPrefix+"organization").val($("#divCustomer #"+spanPrefix+"organizationID").val());	
+	var actionsHTML="<div id='actionsInsertContactSave' class='actionItem'>Save</div>";
+	actionsHTML=actionsHTML+"<div id='actionsCloseWorkArea' class='actionItem'>Close</div>";
+	$("#actionsWorkAreaDIV").html(actionsHTML);
+};
+
+$(document).ready(function(e) {
+	LoggedIn();
+	$.when(GetCustomersShortAll(),GetOrganizationsShortAll()).done(function(msg1,msg2){
+		var temp1=JSON.parse(msg1[0]);
+		var temp2=JSON.parse(msg2[0]);
+		var organizations=TurnCollectionIntoOptions(temp2);
+		var customers=TurnCollectionIntoOptions(temp1);
+		descriptionFormCustomer={ 	customer 	: 	{inputhidden : {idPrefix: spanPrefix,
+																	elementClass:"formElement"	}},
+									name		:	{legend : {legendText: "Customer name",
+															   elementClass:"formElement"	},
+													span : {idPrefix: spanPrefix,
+															elementClass:"formElement changeable"	},
+													 inputtext : {	idPrefix: inputTextPrefix,
+													 				maxLength: "25",
+																	elementClass:"formElement"	}	},
+									description	:	{legend :{legendText: "Description",
+															  elementClass:"formElement"	},
+													span : {idPrefix: spanPrefix,
+															elementClass:"formElement changeable"	},
+													 inputtext : {	idPrefix: inputTextPrefix,
+													 				maxLength: "200",
+																	elementClass:"formElement"	}	},
+									webSite		:	{legend : {legendText: "Web site",
+																elementClass:"formElement"	},
+													span : {idPrefix: spanPrefix,
+															elementClass:"formElement changeable"	},
+													 inputtext : {	idPrefix: inputTextPrefix,
+													 				maxLength: "50",
+																	elementClass:"formElement"	}	},
+									phone		:	{legend : {legendText: "Main phone",
+																elementClass:"formElement"	},
+													span : {idPrefix: spanPrefix,
+															elementClass:"formElement changeable"	},
+													 inputtext : {	idPrefix: inputTextPrefix,
+													 				maxLength: "20",
+																	elementClass:"formElement"	}	},
+									address		:	{legend : {legendText: "Address",
+																elementClass:"formElement"	},
+													span : {idPrefix: spanPrefix,
+																	elementClass:"formElement changeable"	},
+													 inputtext : {	idPrefix: inputTextPrefix,
+													 				maxLength: "30",
+																	elementClass:"formElement"	}	},
+									city		:	{legend : {legendText: "City",
+																elementClass:"formElement"	},
+													span : {idPrefix: spanPrefix,
+																	elementClass:"formElement changeable"	},
+													 inputtext : {	idPrefix: inputTextPrefix,
+													 				maxLength: "50",
+																	elementClass:"formElement"	}	},
+									state		:	{legend : {legendText: "State",
+																elementClass:"formElement"	},
+													span : {idPrefix: spanPrefix,
+																	elementClass:"formElement changeable"	},
+													 inputtext : {	idPrefix: inputTextPrefix,
+													 				maxLength: "20",
+																	elementClass:"formElement"	}	},
+									country		:	{legend : {legendText: "Country",
+																elementClass:"formElement"	},
+													span : {idPrefix: spanPrefix,
+																	elementClass:"formElement changeable"	},
+													 inputtext : {	idPrefix: inputTextPrefix,
+													 				maxLength: "50",
+																	elementClass:"formElement"	}	},
+									parent 		: 	{inputhidden :{idPrefix: spanPrefix,
+																	elementClass:"formElement"	}},
+									parentName	:	{legend : {legendText: "Parent customer",
+																elementClass:"formElement"	},
+													span : {idPrefix: spanPrefix,
+																	elementClass:"formElement changeable"	},
+													 selectControl : {idPrefix: selectPrefix,
+													 				dataSource: customers,
+																	additionalLine: "None",
+																	elementClass:"formElement"	}},
+									organizationID	: 	{inputhidden : {idPrefix: spanPrefix,
+																	elementClass:"formElement"	}},
+									organization	:	{legend : {legendText: "Organization",
+																elementClass:"formElement"	},
+														span : {idPrefix: spanPrefix,
+																	elementClass:"formElement changeable"	},
+													 	selectControl : {idPrefix: selectPrefix,
+													 				dataSource: organizations,
+																	elementClass:"formElement"	}},
+									entity_person : {legend : {legendText: "Entity or person",
+																elementClass:"formElement"	},
+													inputradio : {	idPrefix: inputTextPrefix,
+																	elementClass:"formElement",
+																	data : { row1: {value:'0',
+																			description: "Entity"},
+																			row2:{value:'1',
+																			description: "Person"}}
+									}},
+									createdFirstName:	{legend : {legendText: "Created by",
+																elementClass:"formElement"	},
+														span : {idPrefix: spanPrefix,
+																	elementClass:"formElement"	}},
+									createdLastName	:	{span : {idPrefix: spanPrefix,
+																	elementClass:"formElement"	}},
+									modifiedFirstName	:	{legend : {legendText: "Last modified by",
+																elementClass:"formElement"	},
+															span : {idPrefix: spanPrefix,
+																	elementClass:"formElement"	}},
+									modifiedLastName:	{span : {idPrefix: spanPrefix,
+																	elementClass:"formElement"	}}};
+				descriptionFormContact={ 	contact 	: 		{inputhidden : {idPrefix: spanPrefix,
+																		elementClass:"formElement"	}},
+									firstName		:	{legend : {		legendText: "First name",
+															   			elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "25",
+																		elementClass:"formElement"	}	},
+									middleName	:		{legend : {		legendText: "Middle name",
+															   			elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "25",
+																		elementClass:"formElement"	}	},
+									lastName		:	{legend : {		legendText: "Last name",
+															   			elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "25",
+																		elementClass:"formElement"	}	},
+									positionDescription:{legend :{		legendText: "Position description",
+															  			elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "100",
+																		elementClass:"formElement"	}	},
+									description	:		{legend :{		legendText: "Description",
+															  			elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "200",
+																		elementClass:"formElement"	}	},
+									customerName	:	{inputhidden :{	idPrefix: spanPrefix,
+																		elementClass:"formElement"	}},
+									organization	:	{inputhidden : {idPrefix: spanPrefix,
+																		elementClass:"formElement"	}},
+									email1Desc		:	{legend : {		legendText: "Email description",
+																		elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "10",
+																		elementClass:"formElement"	}	},
+									email1		:	{	legend : {		legendText: "Email",
+																		elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "50",
+																		elementClass:"formElement"	}	},
+									phone1Desc		:	{legend : {		legendText: "Phone description",
+																		elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "10",
+																		elementClass:"formElement"	}	},
+									phone1		:	{	legend : {		legendText: "Phone",
+																		elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "20",
+																		elementClass:"formElement"	}}};
+
+	});
+	
+	
+	
+
+	$("#presentationDIV").on("click",".customerListData",function(e){
+		var x=e.target.id;
+		var y=x.replace("customer","id");
+		var z=$("#"+y).val();
+		FillTableCustomer(z);
+	});
+	
+	$("#presentationDIV").on("click",".customerListDelete",function(e){
+		var x=e.target.id;
+		var customer=x.substring(x.indexOf("_")+1);
+
+		$.when(DeleteCustomer(customer)).done(function(msg){
+			if(msg==="1"){
+				var tekst = $("#inputSearchString").val();
+				if(tekst.length>2||tekst==""){
+					CustomersSearch(tekst,"presentationDIV");	
+				}else{
+					CustomersSearch("","presentationDIV");	
+				};		
+			};	
+		});
+	});
+	
+	$("#presentationDIV").on("contextmenu",".customerList",function(e){
+		e.preventDefault();
+		var x=e.target.id;
+		var y=x.replace("customer","id");
+		var z=$("#"+y).val();
+		var xPosition=e.pageX;
+		var yPosition=e.pageY;
+		
+		$("#contextMenu").html("<div id='actionsDeleteCustomer' class='actionItem'>Delete customer<input type='hidden' id='deleteCustomer' value="+z+" /></div>");
+		$("#contextMenu").css({left:xPosition,top:yPosition}).show();
+	});
+	
+	$("#presentationDIV").on("mouseleave",".customerList",function(e){
+		$("#contextMenu").hide();
+	});
+	
+	$("#contextMenu").on("mouseenter","",function(e){
+		
+		$("#contextMenu").show();	
+	});
+
+	$("#contextMenu").on("mouseleave","",function(e){
+		$("#contextMenu").hide();	
+	});
+
+	CustomersSearch("","presentationDIV");
+	
+	$(".menuTop").click(function(e){
+		MenuTopClick(e.target.id);
+	});
+	
+	$("#inputSearchString").keyup(function(e){
+		var tekst = e.target.value;
+		if(tekst.length>2||tekst==""){
+			$("#presentationDIV").height("auto");
+			CustomersSearch(tekst,"presentationDIV");	
+		}
+	});
+	
+	$("#divCustomer").on("click",".viewDIVFirst",function(e){
+		$('div[id*='+e.target.id+'_].viewDIV').toggle();
+	});
+
+	$("#divCustomer, #contextMenu, #divForCustomerSearch, #divWorkArea").on("click",".actionItem",function(e){
+		var control=e.target.id;
+		switch(control){
+			case "actionsEdit":
+				StartCustomerEditInsertMode();
+				var actionsHTML="<div id='actionsEditCancel' class='actionItem'>Cancel</div>";
+				actionsHTML=actionsHTML+"<div id='actionsEditSave' class='actionItem'>Save</div>";
+				actionsHTML=actionsHTML+"<div id='actionsClose' class='actionItem'>Close</div>";
+				$("#actionsDIV").html(actionsHTML);
+				break;
+			case "actionsAddContact":
+				AddContactToCustomer();
+				break;
+			case "actionsInsertContactSave":
+				$("#statusDIV").html("Snimam promjenu.");
+				var serializedData=$("#divWorkArea").serializeForm();
+				$.when(SaveContact(serializedData)).done(function(msg1){
+					var h = msg1;
+					if (Number(h)>0){
+						$("#divWorkArea").hide(200);
+						var z = $("#divCustomer #"+spanPrefix+"customer").val()
+						FillTableCustomer(z);					
+						$("#statusDIV").html("Promjena je uspješno snimljena.");
+					}
+					else if (h==="0"){
+						$("#statusDIV").html("Promjena nije snimljena.");						
+					}
+					else
+					{
+						$("#statusDIV").html("Došlo je do greške "+h);						
+					}
+					
+				});
+
+				break;	
+			case "actionsClose":
+				$("#statusDIV").html("&nbsp;");
+				var tekst = $("#inputSearchString").val();
+				if(tekst.length>2||tekst==""){
+					$("#presentationDIV").height("auto");
+					CustomersSearch(tekst,"presentationDIV");	
+				}else{
+					CustomersSearch("","presentationDIV");	
+				};
+				$("#presentationDIV").height("auto");
+				$("#actionsMinimizePresentation").html("Minimize");
+				$("#divCustomer").hide(200);
+				$("#divWorkArea").hide(200);
+				break;
+			case "actionsEditSave":
+				$("#statusDIV").html("Snimam promjenu.");
+				var serializedData=$("#divCustomer").serializeForm();
+				$.when(SaveCustomer(serializedData)).done(function(msg1){
+					var h = msg1;
+					if (h ==="1"){
+						var z = $("#divCustomer #detailcustomer").val();
+						FillTableCustomer(z);
+						$("#statusDIV").html("Promjena je uspješno snimljena.");
+					}
+					else if (h==="0"){
+						$("#statusDIV").html("Promjena nije snimljena.");						
+					}
+					else
+					{
+						$("#statusDIV").html("Došlo je do greške "+h);						
+					}
+					
+				});
+				break;
+			case "actionsInsertSave":
+				$("#statusDIV").html("Snimam promjenu.");
+				var serializedData=$("#divCustomer").serializeForm();
+				$.when(SaveCustomer(serializedData)).done(function(msg1){
+					var h = msg1;
+					if (Number(h)>0){
+						FillTableCustomer(h);
+						$("#statusDIV").html("Promjena je uspješno snimljena.");
+					}
+					else if (h==="0"){
+						$("#statusDIV").html("Promjena nije snimljena.");						
+					}
+					else
+					{
+						$("#statusDIV").html("Došlo je do greške "+h);						
+					}
+					
+				});
+				break;
+			case "actionsEditCancel":
+				$("#statusDIV").html("&nbsp;");
+				$("#divCustomer span").show();
+				$("#divCustomer input:text").each(function(){
+					controlTekst = this.id;
+					controlDetails = controlTekst.replace(inputTextPrefix, spanPrefix);
+					$("#" + controlTekst).val($("#" + controlDetails).text());					
+				});
+				$("#divCustomer input:text").hide();
+				$("#selectControlorganization").hide();
+				$("#selectControlparentName").hide();
+				var actionsHTML="<div id='actionsEdit' class='actionItem'>Edit</div>";
+				actionsHTML=actionsHTML+"<div id='actionsClose' class='actionItem'>Close</div>";
+				$("#divCustomer #"+inputTextPrefix+"entity_person").attr('disabled','disabled');
+				$("#actionsDIV").html(actionsHTML);
+				break;
+			case "actionsMinimizePresentation":
+				var x =$("#presentationDIV").height();
+				if($("#presentationDIV").height()===0){
+					$("#presentationDIV").height("auto")
+					e.target.textContent="Minimize";
+				}
+				else
+				{
+					$("#presentationDIV").height("0")
+					e.target.textContent="Maximize";
+				};
+				break;
+			case "actionsInsertNewCustomer":
+				CreateEmptyTableCustomer();
+				break;
+			case "actionsCloseWorkArea":
+				$("#divWorkArea").hide(200);
+				break;
+			case "actionsDeleteCustomer":
+				var customer=$("#deleteCustomer").val();
+				$.when(DeleteCustomer(customer)).done(function(msg){
+					if(msg==="1"){
+						$("#contextMenu").hide();
+						var tekst = $("#inputSearchString").val();
+						if(tekst.length>2||tekst==""){
+							//$("#presentationDIV").height("auto");
+							CustomersSearch(tekst,"presentationDIV");	
+						}else{
+							CustomersSearch("","presentationDIV");	
+						};		
+					};	
+				});
+				break;
+		}
+	});
+
+});
+</script>
+<link rel="stylesheet" href="freecrm.css"></link>
+</head>
+
+<body style="width:80%">
+<!--#include virtual="head.shtml" --> 
+<!--#include virtual="uppermenu.shtml" --> 
+<br />
+<div id="divForCustomerSearch" class="topLeftForm"> 
+    <div id="actionsDIVTop" class="actions"><div id='actionsMinimizePresentation' class='actionItem'>Minimize</div>
+    										<div id='actionsInsertNewCustomer' class='actionItem'>Insert new customer</div></div>
+    <form action="" method="post" name="formWideSearch" class="searchForm">
+        <legend align="left" class="formElement">Search string:</legend>
+        <input name="inputSearchString" id="inputSearchString" type="text" maxlength="25"  class="formElement"/><br />
+    </form>
+    
+	<div id="presentationDIV" class="resultList"></div>
+	<span id="spanStatus"></span>
+</div><br />
+<div class='status' id='statusDIV'>&nbsp;</div>
+<div id="divCustomer" class="mainLeftForm" style="display:none"></div><div id="divWorkArea" class="mainRightForm" style="display:none"></div>
+<div id="contextMenu" class="contextMenu"></div>
+</body>
+</html>

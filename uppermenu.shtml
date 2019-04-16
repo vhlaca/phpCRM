@@ -1,0 +1,7 @@
+<div class="upperMenu">
+<table class="menuTopRow">
+<tr>
+	<td><span class="menuTop" id="Home">Home</span></td><td><span class="menuTop" id="Customers">Customers</span></td><td><span class="menuTop" id="Contacts">Contacts</span></td><td><span class="menuTop" id="PaS">Products and Services</span></td><td>Meni 3</td><td>Meni 4</td><td><span class="menuTop" id="LogOut">Logout</span></td>
+</tr>
+</table>
+</div>

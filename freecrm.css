@@ -1,0 +1,360 @@
+@charset "utf-8";
+/* CSS Document */
+
+.loginForm{
+	width: 340px;
+	height:100px;
+	margin: 20px 25px;
+}
+
+.contextMenu{
+	position: absolute;
+	background-color:white;
+}
+
+.searchForm{
+	margin: 20px 25px;
+	width: 300px;
+}
+
+.centerForm {
+	border: 2px solid red;
+	border-bottom-left-radius:1em;
+	border-bottom-right-radius:1em;
+	border-top-left-radius:1em;
+	border-top-right-radius:1em;
+	overflow:hidden;
+	position: fixed; top:50%; left:50%;	
+	margin: auto;
+	width: 350px;
+	height:120px;
+	top:50%;
+    left:50%;
+    margin:-60px 0 0 -175px;
+	display:table-cell;
+	vertical-align:middle;
+}
+
+.topCenterForm {
+	border: 2px solid red;
+	border-bottom-left-radius:1em;
+	border-bottom-right-radius:1em;
+	border-top-left-radius:1em;
+	border-top-right-radius:1em;
+	overflow:hidden;
+	position: fixed; left:50%;	
+	margin: auto;
+	width: 350px;
+	height:100px;
+    margin:0 0 0 -175px;
+	display:table-cell;
+	vertical-align:middle;
+}
+
+.topLeftForm {
+	border: 2px solid red;
+	border-bottom-left-radius:1em;
+	border-bottom-right-radius:1em;
+	border-top-left-radius:1em;
+	border-top-right-radius:1em;
+	margin: auto;
+	width: 500px;
+	height:auto;
+	display:table-cell;
+	overflow:hidden;
+	vertical-align:top;
+	text-align:left;
+	margin-bottom::50px;
+	padding-bottom:20px;		
+}
+
+.resultList {
+	height:200px;
+	width:500px;
+	max-height:200px;
+	overflow-y:scroll;
+	margin-bottom::20px;
+}
+
+.resultListWorkArea {
+	width:450px;
+	height:120px;
+	overflow-y:scroll;
+	margin-bottom:25px;
+}
+
+.detailedContent {
+	width:450px;
+	max-heigh:250px;
+	overflow-y:scroll;
+	margin-bottom:25px;
+}
+
+:hover.customerList{
+	background-color:#66FFFF
+}
+
+.customerList{
+	margin-left:20px;
+	margin-bottom:7px;
+	display:compact;
+	font-family:"Lucida Sans Unicode", "Lucida Grande", sans-serif;
+	font-size:12px;	
+	color:black;
+}
+
+.topMainForm {
+	border: 2px solid red;
+	border-bottom-left-radius:1em;
+	border-bottom-right-radius:1em;
+	border-top-left-radius:1em;
+	border-top-right-radius:1em;
+	margin: auto;
+	width: 40%;
+	height:auto;
+	display:table-cell;
+	vertical-align:top;
+	text-align:left;
+}
+
+.mainLeftForm {
+	border: 2px solid red;
+	border-bottom-left-radius:1em;
+	border-bottom-right-radius:1em;
+	border-top-left-radius:1em;
+	border-top-right-radius:1em;
+	margin: auto;
+	width: 40%;
+	max-width:50%;
+	height:auto;
+	display:table-cell;
+	vertical-align:top;
+	text-align:left;
+}
+
+.mainRightForm {
+	border: 2px solid red;
+	border-bottom-left-radius:1em;
+	border-bottom-right-radius:1em;
+	border-top-left-radius:1em;
+	border-top-right-radius:1em;
+	margin: auto;
+	width: 40%;
+	max-width:50%;
+	height:auto;
+	display:table-cell;
+	vertical-align:top;
+	text-align:left;
+}
+
+
+.formElement{
+	font-family:"Lucida Sans Unicode", "Lucida Grande", sans-serif;
+	width:290px;
+}
+
+legend.formElement{
+	border:none;
+	font-size:10px;
+	font-weight:bold;
+	width: 145px;
+}
+
+input.formElement{
+	font-size:12px;		
+}
+
+span.formElement{
+	font-size:12px;		
+}
+
+.radio{
+	width:auto;	
+}
+
+table.customerTable{
+	margin-top:20px;
+	display:inline;		
+}
+
+table.contactTable{
+	margin-top:20px;
+	display:inline;		
+}
+
+table.pasTable{
+	margin-top:20px;
+	display:inline;		
+}
+
+.menuTop{
+	font-family:"Lucida Sans Unicode", "Lucida Grande", sans-serif;
+	font-size:16px;	
+	cursor:pointer;
+}
+
+.menuTopRow{
+	width: 80%;
+}
+
+.actions{
+	margin-top:20px;
+  	float:right;
+	display:inline;
+}
+
+.status{
+  	widht:100%;
+	text-align:center;
+	margin-left:20px;
+	margin-right:20px;
+	font-family:"Lucida Sans Unicode", "Lucida Grande", sans-serif;
+	font-size:12px;
+}
+
+.actionItem{
+	font-family:"Lucida Sans Unicode", "Lucida Grande", sans-serif;
+	font-size:10px;	
+	color:black;
+	cursor:pointer;	
+}
+
+:hover.actionItem{
+	background-color:#66FFFF
+}
+
+.viewDIVFirst{
+	font-family:"Lucida Sans Unicode", "Lucida Grande", sans-serif;
+	font-size:11px;	
+	color:black;
+	cursor:pointer;
+	margin-left:20px;
+	margin-right:20px;
+	margin-top:20px;
+	background-color:#6FF
+}
+
+.viewDIV{
+	font-family:"Lucida Sans Unicode", "Lucida Grande", sans-serif;
+	font-size:10px;	
+	color:black;
+	cursor:pointer;
+	margin-left:40px;
+	margin-right:20px;
+	margin-bottom:5px;
+}
+
+:hover.viewDIV{
+	background-color:#66FFFF
+}
+
+.customerListData{
+	margin-left:20px;
+	margin-bottom:7px;
+	cursor:pointer;
+	display: inline;
+}
+
+.customerListDelete{
+	margin-left:20px;
+	margin-bottom:7px;
+	cursor:pointer;
+	display: inline;
+	float: right;
+}
+
+.contactListData{
+	margin-left:20px;
+	margin-bottom:7px;
+	cursor:pointer;
+	display: inline;
+
+}
+
+.contactListDelete{
+	margin-left:20px;
+	margin-bottom:7px;
+	cursor:pointer;
+	display: inline;
+	float: right;
+}
+
+.contactList{
+	font-family:"Lucida Sans Unicode", "Lucida Grande", sans-serif;
+	font-size:12px;	
+	margin-left:50px;
+	cursor:pointer;
+	color:#0000CC
+}
+
+.contactContactList{
+	margin-left:20px;
+	margin-bottom:7px;
+	display:compact;
+	font-family:"Lucida Sans Unicode", "Lucida Grande", sans-serif;
+	font-size:12px;	
+	color:black;
+}
+
+:hover.contactContactList{
+	background-color:#66FFFF;
+	color: Black;
+}
+
+:hover.contactList{
+	background-color:#66FFFF;
+	color: Black;
+}
+
+.PASData{
+	margin-left:20px;
+	margin-bottom:7px;
+	cursor:pointer;
+	display: inline;
+
+}
+
+.PASListDelete{
+	margin-left:20px;
+	margin-bottom:7px;
+	cursor:pointer;
+	display: inline;
+	float: right;
+}
+
+
+
+.PASList{
+	margin-left:20px;
+	margin-bottom:7px;
+	display:compact;
+	font-family:"Lucida Sans Unicode", "Lucida Grande", sans-serif;
+	font-size:12px;	
+	color:black;
+}
+
+:hover.PASList{
+	background-color:#66FFFF;
+	color: Black;
+}
+
+.ContentsList{
+	margin-left:20px;
+	margin-bottom:7px;
+	display:compact;
+	font-family:"Lucida Sans Unicode", "Lucida Grande", sans-serif;
+	font-size:12px;	
+	color:black;
+}
+
+span.ContentsList{
+	margin:2px;
+	width:250px;
+	float:left;
+	
+}
+
+input.ContentsList{
+	margin:2px;
+	width:25px;
+}

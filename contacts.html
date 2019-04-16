@@ -1,0 +1,457 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Untitled Document</title>
+<script src="jquery.js"></script>
+<script src="freecrm.js"></script>
+<script src="freecrm.ajax.js"></script>
+<script>
+var descriptionFormContact;
+var descriptionTableSales;
+
+//constants for auto creating tables - these constants define first part of the ID of controles 
+var spanPrefix="detail";
+var inputTextPrefix="text";
+var selectPrefix="selectControl";
+
+function StartContactEditInsertMode(){
+	$("#statusDIV").html("&nbsp;");
+	$("#divContact span.changeable").hide();
+	$("#divContact input:text").show();
+	$("#divContact select").show();
+	$("#"+selectPrefix+"customerName").val($("#"+spanPrefix+"customerID").val());
+	$("#"+selectPrefix+"organization").val($("#"+spanPrefix+"organizationID").val());
+};
+
+function CreateEmptyTableContact(){
+	var htmlValue="<div class='actions' id='actionsDIV'></div>"+CreateVerticalTable("", descriptionFormContact,"contactTable");
+	$("#divContact").html(htmlValue).show(200);
+	$("#presentationDIV").height(0);
+	StartContactEditInsertMode();
+	var actionsHTML="<div id='actionsInsertSave' class='actionItem'>Save</div>";
+	actionsHTML=actionsHTML+"<div id='actionsClose' class='actionItem'>Close</div>";
+	$("#actionsDIV").html(actionsHTML);	
+};
+
+
+function ContactsSearch(searchString,divResults){
+	$.when(ajaxContactsSearch(searchString)).done(function(msg){
+		var result=JSON.parse(msg);
+		var htmlToCreate="";
+		$.each(result,function(rbr, resultRow){
+			htmlToCreate=htmlToCreate+"<div class='contactContactList'><div class='contactListData' id='contact_"+resultRow.contact+"'><input id='id_"+resultRow.contact+"' type='hidden' value='"+resultRow.contact+"' />"+ReplaceUndefined(resultRow.firstName)+" "+ReplaceUndefined(resultRow.lastName)+" "+LimitLength(ReplaceUndefined(resultRow.description),20)+" "+LimitLength(ReplaceUndefined(resultRow.positionDescription),20)+"</div><div class='contactListDelete' id='deleteContact_"+resultRow.contact+"'>DELETE</div></div>";
+		});
+		$("#"+divResults).html(htmlToCreate);
+	});
+};
+
+function FillTableContact(z){
+	$.when(GetContact(z),GetContactsSales(z)).done(function(msg1,msg2){
+		var contact=JSON.parse(msg1[0]);
+		var sales=JSON.parse(msg2[0]);
+		
+		var htmlValue="<div class='actions' id='actionsDIV'></div>"+CreateVerticalTable(contact, descriptionFormContact,"contactTable");
+		htmlValue=htmlValue+"<br />"+ CreateViewDIV(sales, "Sales", "This contact's sales","salesID");
+		$("#divContact").html(htmlValue).show(200);
+		$("#presentationDIV").height(0);
+		$("#actionsMinimizePresentation").html("Maximize");
+		var actionsHTML="<div id='actionsEdit' class='actionItem'>Edit</div>";
+		actionsHTML=actionsHTML+"<div id='actionsClose' class='actionItem'>Close</div>";
+		$("#actionsDIV").html(SetActionsView);
+		$("#selectControlparentName option[value="+z+"]").remove();
+
+	});	
+}
+
+function FillSalesTable(z,contactForSales,customerForSales){
+	$.when(GetSales(z,contactForSales,customerForSales),GetSalesStatus(),ajaxPASSearch("")).done(function(msg1,msg2,msg3){
+		var sales=JSON.parse(msg1[0]);
+		var salesStatus=JSON.parse(msg2[0]);
+		var PASs=JSON.parse(msg3[0]);
+		descriptionTableSales={ 	sales 	: 			{inputhidden : {idPrefix: spanPrefix,
+																		elementClass:"formElement"	}},
+
+									salesStatusID	: 	{inputhidden :{	idPrefix: spanPrefix,
+																		elementClass:"formElement"	}},
+									statusName	:	{legend : {		legendText: "Sales status",
+																		elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 selectControl : {	idPrefix: selectPrefix,
+													 					dataSource: salesStatus,
+																		additionalLine: "None",
+																		elementClass:"formElement"	}},
+									description	:		{legend :{		legendText: "Description",
+															  			elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "200",
+																		elementClass:"formElement"	}	},
+									pasID	: 		{inputhidden : {idPrefix: spanPrefix,
+																		elementClass:"formElement"	}},
+									pasName	:		{legend : {		legendText: "Product or service",
+																		elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	selectControl : {idPrefix: selectPrefix,
+													 					dataSource: PASs,
+																		elementClass:"formElement"	}},
+									value		:		{legend : {		legendText: "Value",
+																		elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "10",
+																		elementClass:"formElement"	}	},
+									modificationBy:	{legend : {		legendText: "Last modified by",
+																		elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement"	}},
+									dateModified:	{legend : {		legendText: "Last modified on",
+																		elementClass:"formElement"	},
+													span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement"	}}};
+		var htmlSales="<div class='actions' id='actionsWorkAreaDIV'></div>"+CreateVerticalTable(sales,descriptionTableSales,"salesTable")
+		$("#divWorkArea").html(htmlSales);
+		var actionsHTML="<div id='actionsSalesEdit' class='actionItem'>Edit</div>";
+		actionsHTML=actionsHTML+"<div id='actionsSalesClose' class='actionItem'>Close</div>";
+		$("#actionsWorkAreaDIV").html(actionsHTML);
+		$("#divWorkArea").show(200);
+	});
+	
+};
+
+
+
+function SetActionsView(){
+	var actionsHTML="<div id='actionsEdit' class='actionItem'>Edit</div>";
+	actionsHTML=actionsHTML+"<div id='actionsAddSales' class='actionItem'>Add sales</div>";
+	actionsHTML=actionsHTML+"<div id='actionsClose' class='actionItem'>Close</div>";	
+	return actionsHTML;
+}
+
+$(document).ready(function(e) {
+	LoggedIn();
+
+	
+	$.when(GetCustomersShortAll(),GetOrganizationsShortAll()).done(function(msg1,msg2){
+		ContactsSearch("","presentationDIV");
+		var temp1=JSON.parse(msg1[0]);
+		var temp2=JSON.parse(msg2[0]);
+		var organizations=TurnCollectionIntoOptions(temp2);
+		var customers=TurnCollectionIntoOptions(temp1);
+		descriptionFormContact={ 	contact 	: 		{inputhidden : {idPrefix: spanPrefix,
+																		elementClass:"formElement"	}},
+									firstName		:	{legend : {		legendText: "First name",
+															   			elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "25",
+																		elementClass:"formElement"	}	},
+									middleName	:		{legend : {		legendText: "Middle name",
+															   			elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "25",
+																		elementClass:"formElement"	}	},
+									lastName		:	{legend : {		legendText: "Last name",
+															   			elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "25",
+																		elementClass:"formElement"	}	},
+
+									positionDescription:{legend :{		legendText: "Position description",
+															  			elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "100",
+																		elementClass:"formElement"	}	},
+									description	:		{legend :{		legendText: "Description",
+															  			elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "200",
+																		elementClass:"formElement"	}	},
+									customerID 		: 	{inputhidden :{	idPrefix: spanPrefix,
+																		elementClass:"formElement"	}},
+									customerName	:	{legend : {		legendText: "Parent customer",
+																		elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 selectControl : {	idPrefix: selectPrefix,
+													 					dataSource: customers,
+																		additionalLine: "None",
+																		elementClass:"formElement"	}},
+									organizationID	: 	{inputhidden : {idPrefix: spanPrefix,
+																		elementClass:"formElement"	}},
+									organization	:	{legend : {		legendText: "Organization",
+																		elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	selectControl : {idPrefix: selectPrefix,
+													 					dataSource: organizations,
+																		elementClass:"formElement"	}},
+									email1Desc		:	{legend : {		legendText: "1st email description",
+																		elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "10",
+																		elementClass:"formElement"	}	},
+									email1		:	{	legend : {		legendText: "1st email",
+																		elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "50",
+																		elementClass:"formElement"	}	},
+									email2Desc		:	{legend : {		legendText: "2nd email description",
+																		elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "10",
+																		elementClass:"formElement"	}	},
+									email2		:	{	legend : {		legendText: "2nd email",
+																		elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "50",
+																		elementClass:"formElement"	}	},
+									phone1Desc		:	{legend : {		legendText: "1st phone description",
+																		elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "10",
+																		elementClass:"formElement"	}	},
+									phone1		:	{	legend : {		legendText: "1st phone",
+																		elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "20",
+																		elementClass:"formElement"	}	},	
+									phone2Desc		:	{legend : {		legendText: "2nd phone description",
+																		elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "10",
+																		elementClass:"formElement"	}	},
+									phone2		:	{	legend : {		legendText: "2nd phone",
+																		elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "20",
+																		elementClass:"formElement"	}	},																		
+									phone3Desc		:	{legend : {		legendText: "3rd phone description",
+																		elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "10",
+																		elementClass:"formElement"	}	},
+									phone3		:	{	legend : {		legendText: "3rd phone",
+																		elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	inputtext : {	idPrefix: inputTextPrefix,
+													 					maxLength: "20",
+																		elementClass:"formElement"	}	},																									
+									createdFirstName:	{legend : {		legendText: "Created by",
+																		elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement"	}},
+									createdLastName	:	{span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement"	}},
+									modifiedFirstName:	{legend : {		legendText: "Last modified by",
+																		elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement"	}},
+									modifiedLastName:	{span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement"	}}};
+	});
+	
+		
+	$("#presentationDIV").on("click",".contactListData",function(e){
+		var x=e.target.id;
+		var y=x.replace("contact","id");
+		var z=$("#"+y).val();
+		FillTableContact(z);
+	});
+	
+	$("#divContact").on("click",".viewDIVFirst",function(e){
+		$('div[id*='+e.target.id+'_].viewDIV').toggle();
+	});
+	
+	$("#divContact").on("click",".viewDIV",function(e){
+		var x=e.target.id;
+		var z=x.substring(x.indexOf("_")+1)
+		var contactForSales=$("#"+spanPrefix+"contact").val();
+		FillSalesTable(z,contactForSales,"0");
+	});
+	
+	$("#presentationDIV").on("click",".contactListDelete",function(e){
+		var x=e.target.id;
+		var contact=x.substring(x.indexOf("_")+1);
+		$.when(DeleteContact(contact)).done(function(msg){
+			if(msg==="1"){
+				var tekst = $("#inputSearchString").val();
+				if(tekst.length>2||tekst==""){
+					ContactsSearch(tekst,"presentationDIV");
+				}else{
+					ContactsSearch("","presentationDIV");
+				};
+			};
+		});
+	}); 
+	
+	
+
+	$("#divForContactsSearch, #divContact").on("click",".actionItem",function(e){
+		var control=e.target.id;
+		switch(control){
+			case "actionsMinimizePresentation":
+				var x =$("#presentationDIV").height();
+				if($("#presentationDIV").height()===0){
+					$("#presentationDIV").height("auto")
+					e.target.textContent="Minimize";
+				}
+				else
+				{
+					$("#presentationDIV").height("0")
+					e.target.textContent="Maximize";
+				};
+				break;
+			case "actionsClose":
+				$("#statusDIV").html("&nbsp;");
+				var tekst = $("#inputSearchString").val();
+				if(tekst.length>2||tekst==""){
+					$("#presentationDIV").height("auto");
+					ContactsSearch(tekst,"presentationDIV");	
+				}else{
+					ContactsSearch("","presentationDIV");	
+				};
+				$("#presentationDIV").height("auto");
+				$("#actionsMinimizePresentation").html("Minimize");
+				$("#divContact").hide();
+				break;
+			case "actionsEdit":
+				StartContactEditInsertMode();
+				var actionsHTML="<div id='actionsEditCancel' class='actionItem'>Cancel</div>";
+				actionsHTML=actionsHTML+"<div id='actionsEditSave' class='actionItem'>Save</div>";
+				actionsHTML=actionsHTML+"<div id='actionsClose' class='actionItem'>Close</div>";
+				$("#actionsDIV").html(actionsHTML);
+				break;
+			case "actionsEditCancel":
+				$("#statusDIV").html("&nbsp;");
+				$("#divContact span").show();
+				$("#divContact input:text").each(function(){
+					controlTekst = this.id;
+					controlDetails = controlTekst.replace(inputTextPrefix, spanPrefix);
+					$("#" + controlTekst).val($("#" + controlDetails).text());					
+				});
+				$("#divContact input:text").hide();
+				$("#divContact select").hide();
+				$("#actionsDIV").html(SetActionsView());
+				break;
+			case "actionsEditSave":
+				$("#statusDIV").html("Snimam promjenu.");
+				var serializedData=$("#divContact").serializeForm();
+				$.when(SaveContact(serializedData)).done(function(msg1){
+					var h = msg1;
+					if (h ==="1"){
+						var z = $("#divContact #"+spanPrefix+"contact").val();
+						FillTableContact(z);
+						$("#statusDIV").html("Promjena je uspješno snimljena.");
+					}
+					else if (h==="0"){
+						$("#statusDIV").html("Promjena nije snimljena.");						
+					}
+					else
+					{
+						$("#statusDIV").html("Došlo je do greške "+h);						
+					}
+					
+				});
+				break;
+			case "actionsInsertSave":
+				$("#statusDIV").html("Snimam promjenu.");
+				var serializedData=$("#divContact").serializeForm();
+				$.when(SaveContact(serializedData)).done(function(msg1){
+					var h = msg1;
+					if (Number(h)>0){
+						FillTableContact(h);
+						$("#statusDIV").html("Promjena je uspješno snimljena.");
+					}
+					else if (h==="0"){
+						$("#statusDIV").html("Promjena nije snimljena.");						
+					}
+					else
+					{
+						$("#statusDIV").html("Došlo je do greške "+h);						
+					}
+					
+				});
+				break;
+			case "actionsInsertNewContact":
+				CreateEmptyTableContact();
+				break;
+
+		}
+	});
+
+	$("#inputSearchString").keyup(function(e){
+		var tekst = e.target.value;
+		if(tekst.length>2||tekst==""){
+			$("#presentationDIV").height("auto");
+			ContactsSearch(tekst,"presentationDIV");	
+		}
+	});
+
+	$(".menuTop").click(function(e){
+		MenuTopClick(e.target.id);
+	});
+
+});
+
+</script>
+<link rel="stylesheet" href="freecrm.css"></link>
+</head>
+
+<body style="width:80%">
+<!--#include virtual="head.shtml" --> 
+<!--#include virtual="uppermenu.shtml" --> 
+<br />
+<div id="divForContactsSearch" class="topLeftForm"> 
+    <div id="actionsDIVTop" class="actions"><div id='actionsMinimizePresentation' class='actionItem'>Minimize</div>
+    										<div id='actionsInsertNewContact' class='actionItem'>Insert new contact</div></div>
+    <form action="" method="post" name="formWideSearch" class="searchForm">
+        <legend align="left" class="formElement">Search string:</legend>
+        <input name="inputSearchString" id="inputSearchString" type="text" maxlength="25"  class="formElement"/><br />
+    </form>
+    
+	<div id="presentationDIV" class="resultList"></div>
+	<span id="spanStatus"></span>
+</div><br />
+<div class='status' id='statusDIV'>&nbsp;</div>
+<div id="divContact" class="mainLeftForm" style="display:none"> 
+</div>
+<div id="divWorkArea" class="mainRightForm" style="display:none"> 
+</div>
+<div id="contextMenu" class="contextMenu"></div>
+
+
+</body>
+</html>

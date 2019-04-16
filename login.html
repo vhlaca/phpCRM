@@ -1,0 +1,48 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Untitled Document</title>
+<script src="jquery.js"></script>
+<script>
+$(document).ready(function(e) {
+	$("#postIt").click(function(e){
+		var userName=$("#inputUserName").val();
+		var password=$("#inputPassword").val();
+		$.ajax({
+			type: "POST",
+			url: "login.php",
+			data: "doThis=CheckLogin&userName="+userName+"&password="+password,
+			error: function (msg){
+				$("#spanStatus").text(msg);
+			},
+			failure: function (msg){
+				$("#spanStatus").text(msg);
+			},
+			success: function (msg){
+				$("#spanStatus").text(msg);
+				if (msg=="Success"){
+					window.location.replace("index.html");	
+				}
+			},
+		})
+	})
+});
+
+</script>
+<link rel="stylesheet" href="freecrm.css"></link>
+</head>
+<div id="divForLogin" class="centerForm">
+
+    <form action="" method="post" name="formLogin" class="loginForm">
+        <legend align="left" class="formElement">User name:</legend>
+        <input name="inputUserName" id="inputUserName" type="text" maxlength="25"  class="formElement"/><br />
+        <legend align="left" class="formElement">Password:</legend>
+        <input name="inputPassword" id="inputPassword" type="password" maxlength="25"  class="formElement"/><br />
+        <input name="postIt" id="postIt" type="button" value="Log in" class="formElement" />
+    </form>
+</div>
+<span id="spanStatus"></span>
+<body>
+</body>
+</html>

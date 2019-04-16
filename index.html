@@ -1,0 +1,67 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Untitled Document</title>
+<script src="jquery.js"></script>
+<script src="freecrm.js"></script>
+<script>
+
+
+
+
+$(document).ready(function(e) {
+	$.ajax({
+		type: "POST",
+		url: "login.php",
+		data: "doThis=IsLogged",
+		error: function (msg){
+			$("#spanStatus").text(msg);
+		},
+		failure: function (msg){
+			$("#spanStatus").text(msg);
+		},
+		success: function (msg){
+			if (msg.indexOf("Success")!=-1){
+				message=msg.replace("Success: ","");
+				$("#LoggedIn").text(message);
+			}
+			else
+			{
+				window.location.replace("login.html");	
+			}
+		},
+	})
+	
+	$("#inputSearchString").keyup(function(e){
+		var k = e.target.value;
+		if(k.length>2){
+			WideSearch(k,"searchResults");	
+		}
+	});
+	
+	$(".menuTop").click(function(e){
+		MenuTopClick(e.target.id);
+	});
+
+});
+</script>
+<link rel="stylesheet" href="freecrm.css"></link>
+</head>
+
+<body>
+<!--#include virtual="head.shtml" --> 
+<!--#include virtual="uppermenu.shtml" --> 
+<br />
+<div id="divForWideSearch" class="topLeftForm"> 
+    <form action="" method="post" name="formWideSearch" class="searchForm">
+        <legend align="left" class="formElement">Search string:</legend>
+        <input name="inputSearchString" id="inputSearchString" type="text" maxlength="25"  class="formElement"/><br />
+    </form>
+<div id="searchResults"></div>
+ 
+<span id="spanStatus"></span>
+</div>
+
+</body>
+</html>

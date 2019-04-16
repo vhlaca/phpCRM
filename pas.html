@@ -1,0 +1,413 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Untitled Document</title>
+<script src="jquery.js"></script>
+<script src="freecrm.js"></script>
+<script src="freecrm.ajax.js"></script>
+<script>
+var descriptionFormPAS;
+
+//constants for auto creating tables - these constants define first part of the ID of controles 
+var spanPrefix="detail";
+var inputTextPrefix="text";
+var selectPrefix="selectControl";
+var content;
+var pas;
+var contained;
+
+function PASSearch(searchString,divResults){
+	var deleteDIV="";
+
+	$.when(ajaxPASSearch(searchString)).done(function(msg){
+		var result=JSON.parse(msg);
+		var htmlToCreate="";
+		$.each(result,function(rbr, resultRow){
+			deleteDIV="<div class='PASListDelete' id='deletePAS_"+resultRow.pas+"'>DELETE</div>"
+			htmlToCreate=htmlToCreate+"<div class='PASList'><div class='PASData' id='pas_"+resultRow.pas+"'><input id='id_"+resultRow.pas+"' type='hidden' value='"+resultRow.pas+"' />"+ReplaceUndefined(resultRow.name)+" "+LimitLength(ReplaceUndefined(resultRow.description),50)+"</div>"+deleteDIV+"</div>";
+		});
+		$("#"+divResults).html(htmlToCreate);
+	});	
+};
+
+function PASSearchContent(searchString,divResults){
+	
+	$.when(ajaxPASSearch(searchString)).done(function(msg){
+		var result=JSON.parse(msg);
+		var workingResult;
+		var returningResult;
+		var currentPAS=$(".pasTable #"+spanPrefix+"pas").val();
+		//workingResult=$.grep(result,function(resultElement,index){
+			//return resultElement.pas!==currentPAS;
+		//});
+		workingResult=$.grep(result,function(resultElement, index){
+			var returningResult=resultElement;
+			$.each(contained,function(rbr,containedItem){
+				if(returningResult.pas===containedItem.id || returningResult.pas===currentPAS) returningResult="";
+			});
+			if(returningResult!=="") return returningResult;
+		});
+		var htmlToCreate="";
+		$.each(workingResult,function(rbr, resultRow){
+			htmlToCreate=htmlToCreate+"<div class='PASList'><div class='PASData' id='pas_"+resultRow.pas+"'><input id='id_"+resultRow.pas+"' type='hidden' value='"+resultRow.pas+"' />"+ReplaceUndefined(resultRow.name)+" "+LimitLength(ReplaceUndefined(resultRow.description),50)+"</div></div>";
+		});
+		$("#"+divResults).html(htmlToCreate);
+	});	
+};
+
+function CreateEmptyTablePAS(){
+	var htmlValue="<div class='actions' id='actionsDIV'></div>"+CreateVerticalTable("", descriptionFormPAS,"pasTable");
+	$("#divPAS").html(htmlValue).show(200);
+	$("#presentationDIV").height(0);
+	StartPASEditInsertMode();
+	var actionsHTML="<div id='actionsInsertSave' class='actionItem'>Save</div>";
+	actionsHTML=actionsHTML+"<div id='actionsClose' class='actionItem'>Close</div>";
+	$("#actionsDIV").html(actionsHTML);	
+};
+
+function StartPASEditInsertMode(){
+	$("#statusDIV").html("&nbsp;");
+	$("#divPAS span.changeable").hide();
+	$("#divPAS input:text").show();
+	$("#divPAS select").show();
+	$("#"+selectPrefix+"organization").val($("#"+spanPrefix+"organizationID").val());
+	$("#divPAS #"+inputTextPrefix+"p_s_b").removeAttr('disabled');
+};
+
+function SaveRC(){
+	var divovi=$("#divContents div.ContentsList")
+	if (divovi.length!=0){
+		var p_a_s=$("#"+spanPrefix+"pas").val();
+		var contains;
+		var qty;
+		var dataToSend="";
+		var addSC="";
+		$.each(divovi, function(i, div){
+			var x=div.id;
+			var y = x.replace("content",spanPrefix+"Contains");
+			contains=$("#"+y).val();
+			y = x.replace("content",inputTextPrefix+"Quantity");
+			qty=$("#"+y).val();
+
+			dataToSend=dataToSend+addSC+"("+p_a_s+","+contains+","+qty +")";
+			addSC=";"			
+		});
+		
+		$.when(SavePASContent(dataToSend)).done(function(msg1){
+			var x = msg1;
+			if (x==="0" || x==="1"){
+				FillTablePAS(p_a_s);
+			};
+		});
+		
+	};	
+}
+
+function FillTablePAS(z){
+	$("#divWorkArea").hide();
+	$.when(GetPAS(z),GetPASContent(z),GetPASContainedIn(z)).done(function(msg1,msg2,msg3){
+		pas=JSON.parse(msg1[0]);
+		content = JSON.parse(msg2[0]);
+		contained = JSON.parse(msg3[0]);
+		
+		var htmlValue="<div class='actions' id='actionsDIV'></div>"+CreateVerticalTable(pas, descriptionFormPAS,"pasTable");
+		htmlValue=htmlValue+"<br />"+ CreateViewDIV(content, "Content", "This product or service contains","contains")+"<br />"+ CreateViewDIV(contained, "ContainedIn", "This product or service is contained in","id")
+		$("#divPAS").html(htmlValue).show(200);
+		$("#presentationDIV").height(0);
+		$("#actionsMinimizePresentation").html("Maximize");
+		$("#actionsDIV").html(SetActionsView());
+	});	
+	
+};
+
+function SetActionsView(){
+	var actionsHTML="<div id='actionsEdit' class='actionItem'>Edit</div>";
+	actionsHTML=actionsHTML+"<div id='actionsReviewContents' class='actionItem'>Review contents</div>";
+	actionsHTML=actionsHTML+"<div id='actionsClose' class='actionItem'>Close</div>";	
+	return actionsHTML;
+}
+
+
+$(document).ready(function(e) {
+	LoggedIn();
+	
+	$.when(GetOrganizationsShortAll()).done(function(msg){
+		PASSearch("","presentationDIV");
+		var organizations=TurnCollectionIntoOptions(JSON.parse(msg));
+		descriptionFormPAS={ 			pas 	: 	{inputhidden : {idPrefix: spanPrefix,
+																	elementClass:"formElement"	}},
+									name		:	{legend : {legendText: "Name",
+															   elementClass:"formElement"	},
+													span : {idPrefix: spanPrefix,
+															elementClass:"formElement changeable"	},
+													 inputtext : {	idPrefix: inputTextPrefix,
+													 				maxLength: "25",
+																	elementClass:"formElement"	}	},
+									description	:	{legend :{legendText: "Description",
+															  elementClass:"formElement"	},
+													span : {idPrefix: spanPrefix,
+															elementClass:"formElement changeable"	},
+													 inputtext : {	idPrefix: inputTextPrefix,
+													 				maxLength: "200",
+																	elementClass:"formElement"	}	},
+									p_s_b : {legend : {legendText: "Product, service or both",
+																elementClass:"formElement"	},
+													inputradio : {	idPrefix: inputTextPrefix,
+																	elementClass:"formElement",
+																	data : { row1: {value:'0',
+																			description: "Product"},
+																			row2:{value:'1',
+																			description: "Service"},
+																			row3:{value:'2',
+																			description: "Both"}}
+									}},
+									organizationID	: 	{inputhidden : {idPrefix: spanPrefix,
+																		elementClass:"formElement"	}},
+									organization	:	{legend : {		legendText: "Organization",
+																		elementClass:"formElement"	},
+														span : {		idPrefix: spanPrefix,
+																		elementClass:"formElement changeable"	},
+													 	selectControl : {idPrefix: selectPrefix,
+													 					dataSource: organizations,
+																		elementClass:"formElement"	}},
+									createdFirstName:	{legend : {legendText: "Created by",
+																elementClass:"formElement"	},
+														span : {idPrefix: spanPrefix,
+																	elementClass:"formElement"	}},
+									createdLastName	:	{span : {idPrefix: spanPrefix,
+																	elementClass:"formElement"	}},
+									modifiedFirstName	:	{legend : {legendText: "Last modified by",
+																elementClass:"formElement"	},
+															span : {idPrefix: spanPrefix,
+																	elementClass:"formElement"	}},
+									modifiedLastName:	{span : {idPrefix: spanPrefix,
+																	elementClass:"formElement"	}}};
+				
+	});
+	
+	$("#inputSearchString").keyup(function(e){
+		var tekst = e.target.value;
+		if(tekst.length>2||tekst==""){
+			$("#presentationDIV").height("auto");
+			PASSearch(tekst,"presentationDIV");	
+		}
+	});
+
+	$("#divWorkArea").on("keyup","#workAreaRCSearch",function(e){
+		var tekst = e.target.value;
+		if(tekst.length>2||tekst==""){
+			PASSearchContent(tekst,"contentsPASSearch");	
+		}
+	});
+
+
+	$(".menuTop").click(function(e){
+		MenuTopClick(e.target.id);
+	});
+
+	$("#presentationDIV").on("click",".PASData",function(e){
+		var x=e.target.id;
+		var y=x.replace("pas","id");
+		var z=$("#"+y).val();
+		FillTablePAS(z);
+	});
+	
+	$("#divPAS").on("click",".viewDIV",function(e){
+		var x=e.target.id;
+		var z=x.substring(x.indexOf("_")+1)
+		if (x.indexOf("Content")!==-1){
+			FillTablePAS(z);
+		}else if (x.indexOf("ContainedIn")!==-1){
+			FillTablePAS(z);
+		};
+	});
+	
+	$("#presentationDIV").on("click",".PASListDelete",function(e){
+		var x=e.target.id;
+		var pas=x.substring(x.indexOf("_")+1);
+		$.when(DeletePAS(pas)).done(function(msg){
+			if(msg==="1"){
+				var tekst = $("#inputSearchString").val();
+				if(tekst.length>2||tekst==""){
+					PASSearch(tekst,"presentationDIV");	
+				}else{
+					PASSearch("","presentationDIV");	
+				};
+			};
+		});
+	}); 
+	
+	
+	$("#divWorkArea").on("click",".PASData",function(e){
+		var idControl=e.target.id.replace("pas","id");
+		var pasID=$("#"+idControl).val();
+		var pasDescription=e.target.textContent;
+		var contents=$("div.ContentsList");
+		var addLine=true;
+		var existingID;
+		var existingContent;
+		$.each(contents,function(rbr,contentDIV){
+			existingID=contentDIV.id.replace("content",spanPrefix+"Contains");
+			existingContent=$("#"+existingID).val();
+			if(existingContent===pasID) addLine=false;
+		});
+		
+		if(addLine){
+			var i = contents.length;
+			var contentsHTML="<div id='content_"+i+"' class='ContentsList'><input type='hidden' id='"+spanPrefix+"Contains_"+i+"' value='"+pasID+"' / ><span class='ContentsList'>"+pasDescription+"</span><input class='ContentsList' type='text' value='0' id='"+inputTextPrefix+"Quantity_"+i+"' />"
+			$("#divContents").append(contentsHTML);
+
+		};
+		
+	});
+	
+	
+	$("#divPAS").on("click",".viewDIVFirst",function(e){
+		$('div[id*='+e.target.id+'_].viewDIV').toggle();
+	});
+	
+	$("#divForPASSearch, #divPAS, #divWorkArea").on("click",".actionItem",function(e){
+		var control=e.target.id;
+		switch(control){
+			case "actionsMinimizePresentation":
+				var x =$("#presentationDIV").height();
+				if($("#presentationDIV").height()===0){
+					$("#presentationDIV").height("auto")
+					e.target.textContent="Minimize";
+				}
+				else
+				{
+					$("#presentationDIV").height("0")
+					e.target.textContent="Maximize";
+				};
+				break;
+			case "actionsClose":
+				$("#statusDIV").html("&nbsp;");
+				$("#divWorkArea").hide();
+				var tekst = $("#inputSearchString").val();
+				if(tekst.length>2||tekst==""){
+					PASSearch(tekst,"presentationDIV");	
+				}else{
+					PASSearch("","presentationDIV");	
+				};
+				$("#presentationDIV").height("auto");
+				$("#actionsMinimizePresentation").html("Minimize");
+				$("#divPAS").hide();
+				break;
+			case "actionsEdit":
+				StartPASEditInsertMode();
+				var actionsHTML="<div id='actionsEditCancel' class='actionItem'>Cancel</div>";
+				actionsHTML=actionsHTML+"<div id='actionsEditSave' class='actionItem'>Save</div>";
+				actionsHTML=actionsHTML+"<div id='actionsClose' class='actionItem'>Close</div>";
+				$("#actionsDIV").html(actionsHTML);
+				break;
+			case "actionsEditSave":
+				$("#statusDIV").html("Snimam promjenu.");
+				var serializedData=$("#divPAS").serializeForm();
+				$.when(SavePAS(serializedData)).done(function(msg1){
+					var h = msg1;
+					if (h ==="1"){
+						var z = $("#divPAS #"+spanPrefix+"pas").val();
+						FillTablePAS(z);
+						$("#statusDIV").html("Promjena je uspješno snimljena.");
+					}
+					else if (h==="0"){
+						$("#statusDIV").html("Promjena nije snimljena.");						
+					}
+					else
+					{
+						$("#statusDIV").html("Došlo je do greške "+h);						
+					}
+					
+				});
+				break;
+			case "actionsEditCancel":
+				$("#statusDIV").html("&nbsp;");
+				$("#divPAS span").show();
+				$("#divPAS input:text").each(function(){
+					controlTekst = this.id;
+					controlDetails = controlTekst.replace(inputTextPrefix, spanPrefix);
+					$("#" + controlTekst).val($("#" + controlDetails).text());					
+				});
+				$("#divPAS input:text").hide();
+				$("#divPAS select").hide();
+				$("#divPAS #"+inputTextPrefix+"p_s_b").attr('disabled','disabled');
+				$("#actionsDIV").html(SetActionsView());
+				break;
+			case "actionsInsertNewPAS":
+				CreateEmptyTablePAS();
+				break;
+			case "actionsInsertSave":
+				$("#statusDIV").html("Snimam promjenu.");
+				var serializedData=$("#divPAS").serializeForm();
+				$.when(SavePAS(serializedData)).done(function(msg1){
+					var h = msg1;
+					if (Number(h)>0){
+						FillTablePAS(h);
+						$("#statusDIV").html("Promjena je uspješno snimljena.");
+					}
+					else if (h==="0"){
+						$("#statusDIV").html("Promjena nije snimljena.");						
+					}
+					else
+					{
+						$("#statusDIV").html("Došlo je do greške "+h);						
+					}
+					
+				});
+				break;
+			case "actionsReviewContents":
+				$("#statusDIV").html("&nbsp;");
+				var contentsHTML="<div class='actions' id='actionsWorkAreaDIV'></div><div class='searchForm'><input name='workAreaRCSearch' id='workAreaRCSearch' type='text' maxlength='25'  class='formElement'/></div><br /><div id='contentsPASSearch' class='resultListWorkArea'></div><div id='divContents' class='detailedContent'>"
+				$.each(content,function(i,item){
+					contentsHTML=contentsHTML+"<div id='content_"+i+"' class='ContentsList'><input type='hidden' id='"+spanPrefix+"Contains_"+i+"' value='"+item.contains+"' / ><span class='ContentsList'>"+item.content+"</span><input class='ContentsList' type='text' value='"+item.quantity+"' id='"+inputTextPrefix+"Quantity_"+i+"' /></div>"
+
+				
+				});
+				$("#divWorkArea").html(contentsHTML+"</div>");
+				var actionsHTML="<div id='actionsRCSave' class='actionItem'>Save</div>";
+				actionsHTML=actionsHTML+"<div id='actionsRCClose' class='actionItem'>Close</div>";
+				$("#actionsWorkAreaDIV").html(actionsHTML);
+				PASSearchContent("","contentsPASSearch");
+				$("#divWorkArea").show(200);
+				break;
+			case "actionsRCClose":
+				$("#divWorkArea").html("").hide(200);
+				break;
+			case "actionsRCSave":
+				SaveRC();
+				break;
+		}
+	});
+	
+	
+});
+
+</script>
+<link rel="stylesheet" href="freecrm.css"></link>
+</head>
+
+<body style="width:80%">
+<!--#include virtual="head.shtml" --> 
+<!--#include virtual="uppermenu.shtml" --> 
+<br />
+<div id="divForPASSearch" class="topLeftForm"> 
+    <div id="actionsDIVTop" class="actions"><div id='actionsMinimizePresentation' class='actionItem'>Minimize</div>
+    										<div id='actionsInsertNewPAS' class='actionItem'>Insert new product or service</div></div>
+    <form action="" method="post" name="formPASSearch" class="searchForm">
+        <legend align="left" class="formElement">Search string:</legend>
+        <input name="inputSearchString" id="inputSearchString" type="text" maxlength="25"  class="formElement"/><br />
+    </form>
+    
+	<div id="presentationDIV" class="resultList"></div>
+	<span id="spanStatus"></span>
+</div><br />
+<div class='status' id='statusDIV'>&nbsp;</div>
+<div id="divPAS" class="mainLeftForm" style="display:none"> 
+</div>
+<div id="divWorkArea" class="mainRightForm" style="display:none"> 
+</div>
+<div id="contextMenu" class="contextMenu"></div>
+</body>
+</html>
